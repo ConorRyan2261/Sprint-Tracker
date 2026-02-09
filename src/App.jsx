@@ -1206,19 +1206,24 @@ const HomeScreen = () => {
     </div>
   );
 };
+// IMPROVED CALENDAR SCREEN WITH LIST VIEW
+// Replace your existing CalendarScreen component with this version
+
 const CalendarScreen = () => {
   const { sprints, taskSchedules, scheduleTask, postponeTask } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState(null);
   const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null);
   const [editDate, setEditDate] = useState('');
-  const [viewMode, setViewMode] = useState('month');
+  const [viewMode, setViewMode] = useState('list'); // Default to list view (better for mobile)
+  const [filterMode, setFilterMode] = useState('all'); // 'all', 'today', 'week', 'overdue'
 
   const getAllTasks = () => {
     const tasks = [];
     sprints.forEach(sprint => {
       sprint.weeklyTasks?.forEach((task, idx) => {
         const taskId = `${sprint.id}-${idx}`;
+        const isCompleted = sprint.completedTasks?.includes(idx);
         tasks.push({
           id: taskId,
           sprintId: sprint.id,
@@ -1226,7 +1231,8 @@ const CalendarScreen = () => {
           title: task.title,
           sprintName: sprint.name,
           scheduledDate: taskSchedules[taskId]?.date || sprint.startDate,
-          postponeCount: taskSchedules[taskId]?.postponeCount || 0
+          postponeCount: taskSchedules[taskId]?.postponeCount || 0,
+          isCompleted
         });
       });
     });
@@ -1269,155 +1275,254 @@ const CalendarScreen = () => {
     return { bgColor: 'bg-rose-900/20', borderColor: 'border-rose-400', emoji: '🛑', label: 'Critical!', textColor: 'text-rose-300' };
   };
 
-  const renderTaskCard = (task) => {
+  const renderTaskCard = (task, compact = false) => {
     const warning = getPostponementWarning(task.postponeCount);
+    
+    if (compact) {
+      // Compact version for calendar grid
+      return (
+        <div 
+          key={task.id}
+          draggable 
+          onDragStart={(e) => handleTaskDragStart(e, task)} 
+          onClick={() => { setSelectedTaskForEdit(task); setEditDate(task.scheduledDate); }}
+          className={`p-2 rounded-lg border cursor-move transition-all hover:shadow-lg ${warning.bgColor} ${warning.borderColor} ${task.isCompleted ? 'opacity-50' : ''}`}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <p className="text-xs font-semibold text-white truncate flex-1">{task.title}</p>
+            <span className="text-sm flex-shrink-0">{warning.emoji}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Full version for list view
     return (
       <div 
         key={task.id}
         draggable 
         onDragStart={(e) => handleTaskDragStart(e, task)} 
         onClick={() => { setSelectedTaskForEdit(task); setEditDate(task.scheduledDate); }}
-        className={`p-3 rounded-xl border-2 cursor-move group transition-all hover:shadow-xl hover:scale-105 transform ${warning.bgColor} ${warning.borderColor} hover:-translate-y-0.5`}
+        className={`p-4 rounded-xl border-2 cursor-pointer group transition-all hover:shadow-xl ${warning.bgColor} ${warning.borderColor} ${task.isCompleted ? 'opacity-60' : ''}`}
       >
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-white text-sm leading-tight truncate group-hover:text-opacity-100">{task.title}</h4>
-            <p className="text-xs text-slate-300 truncate group-hover:text-slate-200">{task.sprintName}</p>
+            <h4 className="font-bold text-white text-base leading-tight mb-1">{task.title}</h4>
+            <p className="text-sm text-slate-300">{task.sprintName}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              📅 {new Date(task.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
           </div>
-          <span className="text-xl flex-shrink-0 group-hover:scale-125 transition-transform">{warning.emoji}</span>
+          <span className="text-2xl flex-shrink-0">{warning.emoji}</span>
         </div>
+        
+        {task.isCompleted && (
+          <div className="mb-2 px-2 py-1 rounded bg-green-900/30 border border-green-600">
+            <span className="text-xs font-semibold text-green-300">✓ Completed</span>
+          </div>
+        )}
         
         {task.postponeCount > 0 && (
           <div className="mb-2 px-2 py-1 rounded-lg bg-slate-900/40 border border-slate-700">
             <span className={`text-xs font-semibold ${warning.textColor}`}>
-              ⏱️ {task.postponeCount}x
+              ⏱️ Postponed {task.postponeCount}x - {warning.label}
             </span>
           </div>
         )}
         
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/50">
-          <span className="text-xs text-slate-400 font-semibold">📌 {task.sprintName.substring(0, 10)}</span>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700/50">
           <button 
-            onClick={(e) => { e.stopPropagation(); postponeTask(task.id); }} 
-            className="text-xs px-2 py-1 bg-slate-700/50 text-slate-300 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-600 font-semibold"
+            onClick={(e) => { e.stopPropagation(); setSelectedTaskForEdit(task); setEditDate(task.scheduledDate); }} 
+            className="text-xs px-3 py-1.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600 font-semibold transition-colors"
           >
-            Postpone
+            📅 Reschedule
           </button>
+          {!task.isCompleted && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); postponeTask(task.id); }} 
+              className="text-xs px-3 py-1.5 bg-amber-700/30 text-amber-300 rounded hover:bg-amber-600/40 font-semibold transition-colors"
+            >
+              ⏭️ Postpone
+            </button>
+          )}
         </div>
       </div>
     );
   };
 
   const allTasks = getAllTasks();
+  
+  // Filter tasks based on filter mode
+  const getFilteredTasks = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-  // MONTH VIEW
-  if (viewMode === 'month') {
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDay = getFirstDayOfMonth(currentDate);
-    const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i));
-    const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return allTasks.filter(task => {
+      const taskDate = new Date(task.scheduledDate);
+      taskDate.setHours(0, 0, 0, 0);
+
+      if (filterMode === 'all') return true;
+      if (filterMode === 'today') return taskDate.getTime() === today.getTime();
+      if (filterMode === 'week') return taskDate >= today && taskDate <= weekFromNow;
+      if (filterMode === 'overdue') return taskDate < today && !task.isCompleted;
+      return true;
+    }).sort((a, b) => {
+      const dateA = new Date(a.scheduledDate);
+      const dateB = new Date(b.scheduledDate);
+      return dateA - dateB;
+    });
+  };
+
+  // LIST VIEW - Mobile Friendly
+  if (viewMode === 'list') {
+    const filteredTasks = getFilteredTasks();
+    const groupedTasks = {};
+    
+    filteredTasks.forEach(task => {
+      const date = new Date(task.scheduledDate).toDateString();
+      if (!groupedTasks[date]) groupedTasks[date] = [];
+      groupedTasks[date].push(task);
+    });
+
+    const today = new Date().toDateString();
+    const tomorrow = new Date(Date.now() + 86400000).toDateString();
 
     return (
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-white">📅 Calendar</h2>
-          <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center w-full md:w-auto">
-            <div className="flex gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button 
-                onClick={() => setViewMode('month')}
-                className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm font-semibold transition-all ${viewMode === 'month' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                📅 Month
-              </button>
-              <button 
-                onClick={() => setViewMode('week')}
-                className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm font-semibold transition-all ${viewMode === 'week' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                📊 Week
-              </button>
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} className="px-3 md:px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 transition-all font-semibold text-sm md:text-base">←</button>
-              <span className="text-white font-bold text-sm md:text-lg px-2 md:px-4 py-2 flex-1 md:flex-none md:min-w-[150px] text-center">{monthName}</span>
-              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} className="px-3 md:px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 transition-all font-semibold text-sm md:text-base">→</button>
-            </div>
+      <div className="max-w-4xl mx-auto p-4">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-white mb-4">📅 Calendar</h2>
+          
+          {/* View Toggle */}
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+            >
+              📋 List
+            </button>
+            <button 
+              onClick={() => setViewMode('month')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'month' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+            >
+              📅 Month
+            </button>
+            <button 
+              onClick={() => setViewMode('week')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'week' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+            >
+              📊 Week
+            </button>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button 
+              onClick={() => setFilterMode('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${filterMode === 'all' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'}`}
+            >
+              All Tasks
+            </button>
+            <button 
+              onClick={() => setFilterMode('today')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${filterMode === 'today' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'}`}
+            >
+              Today
+            </button>
+            <button 
+              onClick={() => setFilterMode('week')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${filterMode === 'week' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'}`}
+            >
+              This Week
+            </button>
+            <button 
+              onClick={() => setFilterMode('overdue')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${filterMode === 'overdue' ? 'bg-red-700 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'}`}
+            >
+              Overdue
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-slate-400 text-xs md:text-sm font-semibold p-2 md:p-3">{d}</div>)}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 md:gap-2">
-          {days.map((day, idx) => (
-            <div 
-              key={idx} 
-              className={`p-2 md:p-3 rounded-lg border-2 min-h-[140px] md:min-h-[220px] overflow-y-auto transition-all ${
-                day === null 
-                  ? 'bg-slate-800/20 border-transparent' 
-                  : 'bg-slate-900/50 border-slate-700 hover:border-violet-500 hover:bg-slate-900/70'
-              }`}
-              onDragOver={day ? (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-violet-600/20', 'border-violet-500'); } : undefined}
-              onDragLeave={day ? (e) => e.currentTarget.classList.remove('bg-violet-600/20', 'border-violet-500') : undefined}
-              onDrop={day ? (e) => handleDayDrop(e, day) : undefined}
-            >
-              {day && (
-                <>
-                  <div className="text-white font-bold text-sm md:text-lg mb-2 md:mb-3 pb-1 md:pb-2 border-b border-slate-700">{day.getDate()}</div>
-                  <div className="space-y-1 md:space-y-2">
-                    {allTasks.filter(t => {
-                      const taskDate = new Date(t.scheduledDate);
-                      return taskDate.toDateString() === day.toDateString();
-                    }).map(task => renderTaskCard(task))}
-                  </div>
-                </>
-              )}
+        {/* Task List */}
+        <div className="space-y-6">
+          {Object.keys(groupedTasks).length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-4xl mb-4">📭</p>
+              <p className="text-slate-400 text-lg">No tasks scheduled</p>
+              <p className="text-slate-500 text-sm mt-2">Create a sprint to get started!</p>
             </div>
-          ))}
+          ) : (
+            Object.keys(groupedTasks).map(dateStr => {
+              const displayDate = dateStr === today ? '🎯 Today' : 
+                                 dateStr === tomorrow ? '📅 Tomorrow' :
+                                 new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+              
+              const isOverdue = new Date(dateStr) < new Date(today) && groupedTasks[dateStr].some(t => !t.isCompleted);
+
+              return (
+                <div key={dateStr} className="space-y-3">
+                  <h3 className={`text-lg font-bold sticky top-0 bg-gradient-to-b from-slate-950 to-slate-900 pb-2 z-10 ${isOverdue ? 'text-red-400' : 'text-white'}`}>
+                    {isOverdue && '⚠️ '}{displayDate}
+                    <span className="ml-2 text-sm font-normal text-slate-400">
+                      ({groupedTasks[dateStr].length} task{groupedTasks[dateStr].length !== 1 ? 's' : ''})
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {groupedTasks[dateStr].map(task => renderTaskCard(task))}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
+        {/* Legend */}
         <div className="mt-8 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-          <p className="text-slate-400 text-sm font-semibold mb-3">Honesty System Status:</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <p className="text-slate-400 text-sm font-semibold mb-3">Status Guide:</p>
+          <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2 px-3 py-2 bg-emerald-900/20 rounded border border-emerald-400">
-              <span className="text-lg">✅</span>
-              <div><p className="text-emerald-300 font-semibold text-xs">On Track</p><p className="text-emerald-400 text-xs">0 postpones</p></div>
+              <span>✅</span>
+              <div><p className="text-emerald-300 font-semibold text-xs">On Track</p></div>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-amber-900/20 rounded border border-amber-400">
-              <span className="text-lg">⚠️</span>
-              <div><p className="text-amber-300 font-semibold text-xs">Risky</p><p className="text-amber-400 text-xs">1-2 postpones</p></div>
+              <span>⚠️</span>
+              <div><p className="text-amber-300 font-semibold text-xs">Risky (1-2)</p></div>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-orange-900/20 rounded border border-orange-400">
-              <span className="text-lg">🚨</span>
-              <div><p className="text-orange-300 font-semibold text-xs">Heavy</p><p className="text-orange-400 text-xs">3-5 postpones</p></div>
+              <span>🚨</span>
+              <div><p className="text-orange-300 font-semibold text-xs">Heavy (3-5)</p></div>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-rose-900/20 rounded border border-rose-400">
-              <span className="text-lg">🛑</span>
-              <div><p className="text-rose-300 font-semibold text-xs">Critical</p><p className="text-rose-400 text-xs">6+ postpones</p></div>
+              <span>🛑</span>
+              <div><p className="text-rose-300 font-semibold text-xs">Critical (6+)</p></div>
             </div>
           </div>
         </div>
 
+        {/* Edit Modal */}
         {selectedTaskForEdit && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 rounded-2xl w-full max-w-md p-8 border border-slate-800">
-              <h2 className="text-2xl font-bold text-white mb-6">📅 Edit Task Date</h2>
-              <p className="text-slate-400 mb-4">{selectedTaskForEdit.title}</p>
+            <div className="bg-slate-900 rounded-2xl w-full max-w-md p-6 border border-slate-800">
+              <h2 className="text-2xl font-bold text-white mb-4">📅 Reschedule Task</h2>
+              <p className="text-slate-300 mb-2 font-semibold">{selectedTaskForEdit.title}</p>
+              <p className="text-slate-400 text-sm mb-4">{selectedTaskForEdit.sprintName}</p>
               <div className="mb-6">
                 <label className="block text-white font-semibold mb-2">New Date:</label>
                 <input 
                   type="date" 
                   value={editDate} 
                   onChange={(e) => setEditDate(e.target.value)} 
-                  className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-white"
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"
                 />
               </div>
               <div className="flex gap-3">
                 <button 
                   onClick={() => setSelectedTaskForEdit(null)} 
-                  className="flex-1 px-4 py-2 border border-slate-700 text-slate-300 rounded hover:bg-slate-800"
+                  className="flex-1 px-4 py-3 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 font-semibold transition-colors"
                 >
                   Cancel
                 </button>
@@ -1426,7 +1531,7 @@ const CalendarScreen = () => {
                     scheduleTask(selectedTaskForEdit.id, editDate);
                     setSelectedTaskForEdit(null);
                   }} 
-                  className="flex-1 px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-500"
+                  className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-500 font-semibold transition-colors"
                 >
                   Update
                 </button>
@@ -1438,108 +1543,206 @@ const CalendarScreen = () => {
     );
   }
 
-  // WEEK VIEW
+  // MONTH VIEW
+  if (viewMode === 'month') {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i));
+    const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-white">📅 Calendar</h2>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center w-full md:w-auto">
+            <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
+              <button 
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+              >
+                📋 List
+              </button>
+              <button 
+                onClick={() => setViewMode('month')}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'month' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+              >
+                📅 Month
+              </button>
+              <button 
+                onClick={() => setViewMode('week')}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${viewMode === 'week' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+              >
+                📊 Week
+              </button>
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-semibold text-sm">←</button>
+              <span className="text-white font-bold text-sm px-4 py-2 flex-1 md:flex-none md:min-w-[180px] text-center bg-slate-800/50 rounded-lg">{monthName}</span>
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))} className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-semibold text-sm">→</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center text-slate-400 text-xs md:text-sm font-semibold p-2">{d}</div>)}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 md:gap-2">
+          {days.map((day, idx) => (
+            <div 
+              key={idx} 
+              className={`p-2 rounded-lg border min-h-[80px] md:min-h-[140px] overflow-y-auto transition-all ${
+                day === null 
+                  ? 'bg-slate-800/20 border-transparent' 
+                  : 'bg-slate-900/50 border-slate-700 hover:border-violet-500'
+              }`}
+              onDragOver={day ? (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-violet-600/20', 'border-violet-500'); } : undefined}
+              onDragLeave={day ? (e) => e.currentTarget.classList.remove('bg-violet-600/20', 'border-violet-500') : undefined}
+              onDrop={day ? (e) => handleDayDrop(e, day) : undefined}
+            >
+              {day && (
+                <>
+                  <div className="text-white font-bold text-sm mb-1 pb-1 border-b border-slate-700">{day.getDate()}</div>
+                  <div className="space-y-1">
+                    {allTasks.filter(t => {
+                      const taskDate = new Date(t.scheduledDate);
+                      return taskDate.toDateString() === day.toDateString();
+                    }).map(task => renderTaskCard(task, true))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {selectedTaskForEdit && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 rounded-2xl w-full max-w-md p-6 border border-slate-800">
+              <h2 className="text-2xl font-bold text-white mb-4">📅 Reschedule Task</h2>
+              <p className="text-slate-300 mb-2 font-semibold">{selectedTaskForEdit.title}</p>
+              <p className="text-slate-400 text-sm mb-4">{selectedTaskForEdit.sprintName}</p>
+              <div className="mb-6">
+                <label className="block text-white font-semibold mb-2">New Date:</label>
+                <input 
+                  type="date" 
+                  value={editDate} 
+                  onChange={(e) => setEditDate(e.target.value)} 
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setSelectedTaskForEdit(null)} 
+                  className="flex-1 px-4 py-3 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    scheduleTask(selectedTaskForEdit.id, editDate);
+                    setSelectedTaskForEdit(null);
+                  }} 
+                  className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-500 font-semibold"
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // WEEK VIEW (keep existing implementation)
   const weekDays = getWeekDays(currentDate);
   const weekStart = weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const weekEnd = weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-white">📅 Calendar</h2>
-        <div className="flex gap-3 items-center">
-          <div className="flex gap-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-white">📅 Calendar</h2>
+        <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center w-full md:w-auto">
+          <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              📋 List
+            </button>
             <button 
               onClick={() => setViewMode('month')}
-              className={`px-3 py-1 rounded text-sm font-semibold transition-all ${viewMode === 'month' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${viewMode === 'month' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}`}
             >
               📅 Month
             </button>
             <button 
               onClick={() => setViewMode('week')}
-              className={`px-3 py-1 rounded text-sm font-semibold transition-all ${viewMode === 'week' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${viewMode === 'week' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400'}`}
             >
               📊 Week
             </button>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setCurrentDate(new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000))} className="px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 transition-all font-semibold">←</button>
-            <span className="text-white font-bold text-sm px-4 py-2 min-w-[220px] text-center">{weekStart} - {weekEnd}</span>
-            <button onClick={() => setCurrentDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000))} className="px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 transition-all font-semibold">→</button>
+          <div className="flex gap-2 w-full md:w-auto">
+            <button onClick={() => setCurrentDate(new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000))} className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-semibold text-sm">←</button>
+            <span className="text-white font-bold text-xs md:text-sm px-3 py-2 flex-1 md:flex-none md:min-w-[200px] text-center bg-slate-800/50 rounded-lg">{weekStart} - {weekEnd}</span>
+            <button onClick={() => setCurrentDate(new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000))} className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-semibold text-sm">→</button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
         {weekDays.map((day, idx) => (
           <div 
             key={idx}
-            className="p-4 rounded-lg border-2 bg-slate-900/50 border-slate-700 hover:border-violet-500 hover:bg-slate-900/70 transition-all"
+            className="p-3 md:p-4 rounded-lg border-2 bg-slate-900/50 border-slate-700 hover:border-violet-500 transition-all"
             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-violet-600/20', 'border-violet-500'); }}
             onDragLeave={(e) => e.currentTarget.classList.remove('bg-violet-600/20', 'border-violet-500')}
             onDrop={(e) => handleDayDrop(e, day)}
           >
-            <div className="mb-4 pb-3 border-b border-slate-700">
+            <div className="mb-3 pb-2 border-b border-slate-700">
               <p className="text-slate-400 text-xs font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-              <p className="text-white font-bold text-2xl">{day.getDate()}</p>
+              <p className="text-white font-bold text-xl md:text-2xl">{day.getDate()}</p>
             </div>
-            <div className="space-y-3 min-h-[450px] overflow-y-auto">
+            <div className="space-y-2 min-h-[200px] md:min-h-[400px] overflow-y-auto">
               {allTasks.filter(t => {
                 const taskDate = new Date(t.scheduledDate);
                 return taskDate.toDateString() === day.toDateString();
               }).length === 0 ? (
-                <p className="text-slate-500 text-xs text-center py-8">No tasks scheduled</p>
+                <p className="text-slate-500 text-xs text-center py-4">No tasks</p>
               ) : (
                 allTasks.filter(t => {
                   const taskDate = new Date(t.scheduledDate);
                   return taskDate.toDateString() === day.toDateString();
-                }).map(task => renderTaskCard(task))
+                }).map(task => renderTaskCard(task, true))
               )}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-        <p className="text-slate-400 text-sm font-semibold mb-3">Honesty System Status:</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-900/20 rounded border border-emerald-400">
-            <span className="text-lg">✅</span>
-            <div><p className="text-emerald-300 font-semibold text-xs">On Track</p><p className="text-emerald-400 text-xs">0 postpones</p></div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-900/20 rounded border border-amber-400">
-            <span className="text-lg">⚠️</span>
-            <div><p className="text-amber-300 font-semibold text-xs">Risky</p><p className="text-amber-400 text-xs">1-2 postpones</p></div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 bg-orange-900/20 rounded border border-orange-400">
-            <span className="text-lg">🚨</span>
-            <div><p className="text-orange-300 font-semibold text-xs">Heavy</p><p className="text-orange-400 text-xs">3-5 postpones</p></div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 bg-rose-900/20 rounded border border-rose-400">
-            <span className="text-lg">🛑</span>
-            <div><p className="text-rose-300 font-semibold text-xs">Critical</p><p className="text-rose-400 text-xs">6+ postpones</p></div>
-          </div>
-        </div>
-      </div>
-
       {selectedTaskForEdit && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl w-full max-w-md p-8 border border-slate-800">
-            <h2 className="text-2xl font-bold text-white mb-6">📅 Edit Task Date</h2>
-            <p className="text-slate-400 mb-4">{selectedTaskForEdit.title}</p>
+          <div className="bg-slate-900 rounded-2xl w-full max-w-md p-6 border border-slate-800">
+            <h2 className="text-2xl font-bold text-white mb-4">📅 Reschedule Task</h2>
+            <p className="text-slate-300 mb-2 font-semibold">{selectedTaskForEdit.title}</p>
+            <p className="text-slate-400 text-sm mb-4">{selectedTaskForEdit.sprintName}</p>
             <div className="mb-6">
               <label className="block text-white font-semibold mb-2">New Date:</label>
               <input 
                 type="date" 
                 value={editDate} 
                 onChange={(e) => setEditDate(e.target.value)} 
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-white"
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white"
               />
             </div>
             <div className="flex gap-3">
               <button 
                 onClick={() => setSelectedTaskForEdit(null)} 
-                className="flex-1 px-4 py-2 border border-slate-700 text-slate-300 rounded hover:bg-slate-800"
+                className="flex-1 px-4 py-3 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 font-semibold"
               >
                 Cancel
               </button>
@@ -1548,7 +1751,7 @@ const CalendarScreen = () => {
                   scheduleTask(selectedTaskForEdit.id, editDate);
                   setSelectedTaskForEdit(null);
                 }} 
-                className="flex-1 px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-500"
+                className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-500 font-semibold"
               >
                 Update
               </button>
@@ -1559,6 +1762,7 @@ const CalendarScreen = () => {
     </div>
   );
 };
+
 
 
 const SprintDetailScreen = () => {
