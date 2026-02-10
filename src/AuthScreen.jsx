@@ -66,7 +66,7 @@ const AuthScreen = ({ onAuthSuccess }) => {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🎯</div>
+          <div className="text-6xl mb-4">⚡</div>
           <h1 className="text-4xl font-bold text-white mb-2">Sprint Tracker</h1>
           <p className="text-slate-400">Track goals, level up, achieve more</p>
         </div>

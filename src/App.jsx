@@ -83,23 +83,23 @@ const NotificationToast = ({ message, type = 'success', onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === 'success' ? 'bg-green-600/20 border-green-600' :
-                  type === 'error' ? 'bg-red-600/20 border-red-600' :
-                  type === 'info' ? 'bg-blue-600/20 border-blue-600' :
-                  'bg-violet-600/20 border-violet-600';
-  
-  const textColor = type === 'success' ? 'text-green-300' :
-                    type === 'error' ? 'text-red-300' :
-                    type === 'info' ? 'text-blue-300' :
-                    'text-violet-300';
+  const bgColor = type === 'success' ? 'bg-green-600 border-green-500' :
+                type === 'error' ? 'bg-red-600 border-red-500' :
+                type === 'info' ? 'bg-blue-600 border-blue-500' :
+                'bg-violet-600 border-violet-500';
+
+  const textColor = type === 'success' ? 'text-white' :
+                  type === 'error' ? 'text-white' :
+                  type === 'info' ? 'text-white' :
+                  'text-white';
 
   const icon = type === 'success' ? '✓' :
                type === 'error' ? '✕' :
                type === 'info' ? 'ℹ' :
                '★';
 
-  return (
-    <div className={`p-4 rounded-lg border ${bgColor} ${textColor} flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300`}>
+ return (
+  <div className={`p-4 rounded-lg border-2 ${bgColor} ${textColor} flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl`}>
       <span className="text-xl font-bold">{icon}</span>
       <span className="flex-1">{message}</span>
       <button onClick={onClose} className="text-lg hover:opacity-70 transition-opacity">×</button>
@@ -3184,7 +3184,7 @@ const SprintScreen = () => {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/70 z-50 p-4 flex items-center justify-center md:items-center overflow-y-auto md:overflow-y-visible">
-          <div className="bg-slate-900 rounded-2xl w-full max-w-2xl border border-slate-800 flex flex-col my-4 md:my-0" style={{maxHeight: 'min(90vh, calc(100vh - 32px))'}}>
+         <div className="bg-slate-900 rounded-2xl w-full max-w-2xl border border-slate-800 flex flex-col my-4 md:my-0" style={{maxHeight: 'min(90vh, calc(100vh - 32px))'}}>
             {/* STICKY HEADER */}
             <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-6 flex items-center gap-3 z-10 rounded-t-2xl flex-shrink-0">
               <span className="text-3xl">✨</span>
@@ -3247,8 +3247,10 @@ const SprintScreen = () => {
                       </div>
                     ))}
                   </div>
-                  <button onClick={addGoalLine} className="mt-3 w-full px-4 py-2 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 text-sm font-semibold">+ Add Another Goal</button>
-                </div>
+                  <button onClick={addGoalLine} className="mt-3 w-full px-4 py-3 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 border-2 border-violet-500 text-white rounded-lg hover:from-violet-600/40 hover:to-fuchsia-600/40 text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]">
+                   <span className="text-lg">✨</span> Add Another Goal
+                   </button>                
+                   </div>
 
                 <div>
                   <label className="block text-white font-semibold mb-2 text-sm">Duration (weeks)</label>
