@@ -851,32 +851,122 @@ const MobileHeader = () => {
 
 const MobileBottomNav = () => {
   const { currentScreen, setCurrentScreen } = useApp();
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
-  const navItems = [
+  const mainNavItems = [
     { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'sprints', label: 'Sprints', icon: '🎯' },
+    { id: 'sprints', label: 'Sprints', icon: '⚡' },
     { id: 'calendar', label: 'Calendar', icon: '📅' },
-    { id: 'insights', label: 'Insights', icon: '📊' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
 
+  const moreNavItems = [
+    { id: 'insights', label: 'Insights', icon: '📊' },
+    { id: 'predictions', label: 'Predictions', icon: '🔮' },
+    { id: 'planning', label: 'Planning', icon: '🎬' },
+    { id: 'habits', label: 'Habits', icon: '✅' },
+    { id: 'achievements', label: 'Achievements', icon: '🏆' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: '🏅' },
+    { id: 'archive', label: 'Archive', icon: '📦' },
+  ];
+
+  const handleMoreClick = () => {
+    setShowMoreMenu(!showMoreMenu);
+  };
+
+  const handleNavClick = (screenId) => {
+    setCurrentScreen(screenId);
+    setShowMoreMenu(false);
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-40 flex justify-around md:hidden">
-      {navItems.map(item => (
+    <>
+      {/* Bottom Sheet More Menu */}
+      {showMoreMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden animate-in fade-in duration-200"
+            onClick={() => setShowMoreMenu(false)}
+          />
+          
+          {/* Bottom Sheet */}
+          <div className="fixed bottom-16 left-0 right-0 bg-slate-900 border-t-2 border-slate-700 z-50 md:hidden animate-in slide-in-from-bottom duration-300 rounded-t-3xl shadow-2xl">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">More Options</h3>
+                <button 
+                  onClick={() => setShowMoreMenu(false)}
+                  className="text-slate-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3 mb-2">
+                {moreNavItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    className={`p-4 rounded-xl transition-all flex flex-col items-center gap-2 ${
+                      currentScreen === item.id
+                        ? 'bg-violet-600 text-white shadow-lg scale-105'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 active:scale-95'
+                    }`}
+                  >
+                    <span className="text-3xl">{item.icon}</span>
+                    <span className="text-xs font-semibold text-center leading-tight">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Main Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-40 flex justify-around md:hidden shadow-lg">
+        {mainNavItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => handleNavClick(item.id)}
+            className={`flex-1 py-3 text-center transition-all flex flex-col items-center gap-0.5 active:scale-95 ${
+              currentScreen === item.id
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span className="text-xl">{item.icon}</span>
+            <span className="text-xs font-semibold">{item.label}</span>
+          </button>
+        ))}
+        
+        {/* More Button */}
         <button
-          key={item.id}
-          onClick={() => setCurrentScreen(item.id)}
-          className={`flex-1 py-3 text-center transition-colors flex flex-col items-center gap-0.5 ${
-            currentScreen === item.id
+          onClick={handleMoreClick}
+          className={`flex-1 py-3 text-center transition-all flex flex-col items-center gap-0.5 active:scale-95 ${
+            showMoreMenu
               ? 'bg-violet-600 text-white'
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-xl">{item.icon}</span>
-          <span className="text-xs">{item.label}</span>
+          <span className="text-xl">⋯</span>
+          <span className="text-xs font-semibold">More</span>
         </button>
-      ))}
-    </div>
+        
+        {/* Settings Button */}
+        <button
+          onClick={() => handleNavClick('settings')}
+          className={`flex-1 py-3 text-center transition-all flex flex-col items-center gap-0.5 active:scale-95 ${
+            currentScreen === 'settings'
+              ? 'bg-violet-600 text-white'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <span className="text-xl">⚙️</span>
+          <span className="text-xs font-semibold">Settings</span>
+        </button>
+      </div>
+    </>
   );
 };
 
@@ -3197,7 +3287,7 @@ const SprintScreen = () => {
 
             {/* SCROLLABLE CONTENT */}
             <div style={{flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch'}}>
-              <div className="p-8 space-y-6">
+              <div className="p-4 md:p-8 space-y-4 md:space-y-6">
                 {error && (
                   <div className="p-3 bg-red-600/20 border border-red-600 rounded text-red-400 text-sm">
                     {error}
@@ -3253,25 +3343,79 @@ const SprintScreen = () => {
                    </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2 text-sm">Duration (weeks)</label>
-                  <select value={duration} onChange={(e) => setDuration(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300">
-                    <option value="2">2 weeks</option>
-                    <option value="4">4 weeks</option>
-                    <option value="6">6 weeks</option>
-                    <option value="8">8 weeks</option>
-                    <option value="12">12 weeks</option>
-                  </select>
+                <label className="block text-white font-semibold mb-3 flex items-center justify-between">
+                  <span>Duration</span>
+                  <span className="text-2xl font-bold text-violet-400">{duration} weeks</span>
+                </label>
+                <div className="space-y-2">
+                  <input 
+                    type="range" 
+                    min="2" 
+                    max="12" 
+                    step="2"
+                    value={duration} 
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                    style={{
+                      background: `linear-gradient(to right, rgb(124 58 237) 0%, rgb(124 58 237) ${((duration - 2) / 10) * 100}%, rgb(51 65 85) ${((duration - 2) / 10) * 100}%, rgb(51 65 85) 100%)`
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 font-semibold px-1">
+                    <span>2w</span>
+                    <span>4w</span>
+                    <span>6w</span>
+                    <span>8w</span>
+                    <span>10w</span>
+                    <span>12w</span>
+                  </div>
                 </div>
+               </div>
 
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm">Starting Point (optional)</label>
-                  <textarea value={startingPoint} onChange={(e) => setStartingPoint(e.target.value)} placeholder="e.g., Currently can run 2K..." className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm" rows="2" />
-                </div>
+              {/* Collapsible Advanced Options */}
+<div className="border border-slate-700 rounded-lg overflow-hidden">
+  <button
+    onClick={() => {
+      const advancedSection = document.getElementById('advanced-options');
+      const isHidden = advancedSection.style.display === 'none';
+      advancedSection.style.display = isHidden ? 'block' : 'none';
+      event.currentTarget.querySelector('.arrow').style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }}
+    className="w-full px-4 py-3 bg-slate-800/50 hover:bg-slate-800 transition-colors flex items-center justify-between"
+  >
+    <span className="text-white font-semibold flex items-center gap-2">
+      <span className="text-lg">⚙️</span>
+      Advanced Options
+      <span className="text-xs text-slate-400">(optional)</span>
+    </span>
+    <span className="arrow text-slate-400 transition-transform duration-300">▼</span>
+  </button>
+  
+  <div id="advanced-options" style={{display: 'none'}} className="p-4 space-y-4 bg-slate-800/20">
+    <div>
+      <label className="block text-white font-semibold mb-2 text-sm">Starting Point</label>
+      <textarea 
+        value={startingPoint} 
+        onChange={(e) => setStartingPoint(e.target.value)} 
+        placeholder="e.g., Currently can run 2K, never coded before..." 
+        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm" 
+        rows="2" 
+      />
+      <p className="text-xs text-slate-500 mt-1">Where are you starting from?</p>
+    </div>
 
-                <div>
-                  <label className="block text-white font-semibold mb-2 text-sm">Constraints (optional)</label>
-                  <textarea value={constraints} onChange={(e) => setConstraints(e.target.value)} placeholder="e.g., Only have 30 mins/day..." className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm" rows="2" />
-                </div>
+    <div>
+      <label className="block text-white font-semibold mb-2 text-sm">Constraints</label>
+      <textarea 
+        value={constraints} 
+        onChange={(e) => setConstraints(e.target.value)} 
+        placeholder="e.g., Only have 30 mins/day, need to work around injury..." 
+        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-sm" 
+        rows="2" 
+      />
+      <p className="text-xs text-slate-500 mt-1">Any limitations or special considerations?</p>
+    </div>
+  </div>
+</div>
               </div>
             </div>
 
