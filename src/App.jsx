@@ -108,6 +108,279 @@ const NotificationToast = ({ message, type = 'success', onClose }) => {
 };
 
 // ============================================================================
+// ONBOARDING COMPONENTS
+// ============================================================================
+
+const OnboardingSpotlight = ({ targetId, position = 'bottom', children, onNext, onSkip, step, totalSteps }) => {
+  const [spotlightStyle, setSpotlightStyle] = useState({});
+
+  useEffect(() => {
+    if (targetId) {
+      const element = document.getElementById(targetId);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        setSpotlightStyle({
+          top: rect.top - 8,
+          left: rect.left - 8,
+          width: rect.width + 16,
+          height: rect.height + 16,
+        });
+      }
+    }
+  }, [targetId]);
+
+  return (
+    <div className="fixed inset-0 z-[100]">
+      {/* Dark overlay with hole */}
+      <div className="absolute inset-0 bg-black/80" />
+      
+      {/* Spotlight hole */}
+      {targetId && (
+        <div 
+          className="absolute border-4 border-violet-500 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.8)] animate-pulse"
+          style={spotlightStyle}
+        />
+      )}
+
+      {/* Content card */}
+      <div className={`absolute bg-slate-900 border-2 border-violet-500 rounded-xl p-6 max-w-sm shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 ${
+        position === 'bottom' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
+        position === 'top' ? 'bottom-24 left-1/2 -translate-x-1/2' :
+        'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+      }`}>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-violet-400">STEP {step} OF {totalSteps}</span>
+            <button onClick={onSkip} className="text-slate-400 hover:text-white text-sm">Skip Tutorial</button>
+          </div>
+          <div className="w-full bg-slate-700 h-1 rounded-full overflow-hidden">
+            <div 
+              className="bg-violet-600 h-full transition-all duration-300"
+              style={{ width: `${(step / totalSteps) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="text-white space-y-3">
+          {children}
+        </div>
+
+        <button
+          onClick={onNext}
+          className="mt-4 w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold rounded-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all"
+        >
+          {step === totalSteps ? '🎉 Get Started!' : 'Next →'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const WelcomeModal = ({ onStartTour, onSkip }) => {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-violet-500 rounded-2xl p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+        {/* Animated Logo */}
+        <div className="text-center mb-6">
+          <div className="text-7xl mb-4 animate-bounce">⚡</div>
+          <h1 className="text-4xl font-bold text-white mb-2">Welcome to Sprint Tracker!</h1>
+          <p className="text-slate-300 text-lg">Turn big goals into achievable sprints</p>
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="space-y-4 mb-6">
+          <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+            <span className="text-2xl">🎯</span>
+            <div>
+              <h3 className="font-bold text-white">6-Week Sprints</h3>
+              <p className="text-sm text-slate-400">Break goals into manageable tasks</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+            <span className="text-2xl">💫</span>
+            <div>
+              <h3 className="font-bold text-white">XP & Levels</h3>
+              <p className="text-sm text-slate-400">Gamify your progress, stay motivated</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+            <span className="text-2xl">📅</span>
+            <div>
+              <h3 className="font-bold text-white">Smart Scheduling</h3>
+              <p className="text-sm text-slate-400">Track and reschedule tasks easily</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <h3 className="font-bold text-white">Achievements</h3>
+              <p className="text-sm text-slate-400">Unlock badges and build streaks</p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            className="flex-1 py-3 border-2 border-slate-600 text-slate-300 rounded-lg hover:bg-slate-800 font-semibold transition-colors"
+          >
+            Skip Tour
+          </button>
+          <button
+            onClick={onStartTour}
+            className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-lg hover:from-violet-500 hover:to-fuchsia-500 font-bold transition-all shadow-lg"
+          >
+            Take 30s Tour ✨
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-500 text-center mt-4">
+          You can always access this tour again from the help button
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const HelpButton = ({ onClick }) => {
+  return (
+    <button
+      onClick={onClick}
+      className="fixed bottom-20 md:bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-full shadow-2xl hover:scale-110 transition-transform z-40 flex items-center justify-center text-2xl font-bold border-2 border-white/20"
+      title="Help & Tutorial"
+    >
+      ?
+    </button>
+  );
+};
+
+const OnboardingTutorial = () => {
+  const { onboardingStep, setOnboardingStep, completeOnboarding, setCurrentScreen } = useApp();
+
+  const handleNext = () => {
+    if (onboardingStep === 5) {
+      completeOnboarding();
+      setCurrentScreen('sprints');
+    } else {
+      setOnboardingStep(onboardingStep + 1);
+    }
+  };
+
+  const handleSkip = () => {
+    completeOnboarding();
+  };
+
+  // Tutorial Steps
+  const steps = [
+    {
+      targetId: null,
+      content: null
+    },
+    {
+      targetId: 'create-sprint-button',
+      position: 'bottom',
+      content: (
+        <>
+          <h3 className="text-xl font-bold mb-2">👆 Start Here!</h3>
+          <p className="text-slate-300">
+            Create a sprint for any goal - fitness, learning, career, anything!
+          </p>
+          <p className="text-sm text-slate-400 mt-2">
+            Our smart templates will generate a personalized 6-week plan.
+          </p>
+        </>
+      )
+    },
+    {
+      targetId: 'calendar-nav',
+      position: 'top',
+      content: (
+        <>
+          <h3 className="text-xl font-bold mb-2">📅 Track Everything</h3>
+          <p className="text-slate-300">
+            All your tasks appear in the calendar. Drag to reschedule, click to edit!
+          </p>
+          <p className="text-sm text-slate-400 mt-2">
+            Use list view on mobile for the best experience.
+          </p>
+        </>
+      )
+    },
+    {
+      targetId: 'xp-level-display',
+      position: 'bottom',
+      content: (
+        <>
+          <h3 className="text-xl font-bold mb-2">💫 Earn XP & Level Up!</h3>
+          <p className="text-slate-300">
+            Complete tasks, check in daily, finish sprints - everything earns XP!
+          </p>
+          <ul className="text-sm text-slate-400 mt-2 space-y-1">
+            <li>✓ Complete task: +10 XP</li>
+            <li>✓ Daily check-in: +25 XP</li>
+            <li>✓ Finish sprint: +50 XP</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      targetId: 'achievements-nav',
+      position: 'top',
+      content: (
+        <>
+          <h3 className="text-xl font-bold mb-2">🏆 Unlock Achievements</h3>
+          <p className="text-slate-300">
+            Build streaks, earn badges, compete on leaderboards!
+          </p>
+          <p className="text-sm text-slate-400 mt-2">
+            7-day streaks, 30-day streaks, and special milestone badges.
+          </p>
+        </>
+      )
+    },
+    {
+      targetId: null,
+      position: 'center',
+      content: (
+        <>
+          <h3 className="text-2xl font-bold mb-2">🎉 You're All Set!</h3>
+          <p className="text-slate-300 mb-4">
+            Ready to create your first sprint and start leveling up?
+          </p>
+          <div className="p-4 bg-violet-600/20 border border-violet-500 rounded-lg">
+            <p className="text-sm text-violet-200">
+              <strong>💡 Pro Tip:</strong> Start with a smaller goal (2-4 weeks) to get a feel for the system!
+            </p>
+          </div>
+        </>
+      )
+    }
+  ];
+
+  const currentStep = steps[onboardingStep];
+
+  if (onboardingStep === 0) {
+    return null;
+  }
+
+  if (!currentStep.content) return null;
+
+  return (
+    <OnboardingSpotlight
+      targetId={currentStep.targetId}
+      position={currentStep.position}
+      step={onboardingStep}
+      totalSteps={5}
+      onNext={handleNext}
+      onSkip={handleSkip}
+    >
+      {currentStep.content}
+    </OnboardingSpotlight>
+  );
+};
+
+// ============================================================================
 // CONTEXT & STATE MANAGEMENT
 // ============================================================================
 
@@ -135,6 +408,14 @@ const AppProvider = ({ children }) => {
   const [sprintInsights, setSprintInsights] = useState({});
   const [weeklyReports, setWeeklyReports] = useState([]);
   const [toastNotifications, setToastNotifications] = useState([]);
+
+  // Onboarding state
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
+    const saved = localStorage.getItem('hasSeenOnboarding');
+    return saved === 'true';
+  });
+  const [showOnboarding, setShowOnboarding] = useState(!hasSeenOnboarding);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   // ✅ LOAD FROM FIREBASE
   useEffect(() => {
@@ -793,7 +1074,21 @@ const AppProvider = ({ children }) => {
       viewSprintDetails, userId, toastNotifications, setToastNotifications,
       calculateSprintInsights, generateWeeklyReport, getPredictions, getGoalCategory,
       getCompletionRateData, getCategoryPerformanceData, getXpProgressionData, getHabitConsistencyData, getStreakData,
-      predictSprintCompletion, getPredictiveInsights, getRiskSprants
+      predictSprintCompletion, getPredictiveInsights, getRiskSprants,
+      hasSeenOnboarding,
+      showOnboarding,
+      setShowOnboarding,
+      onboardingStep,
+      setOnboardingStep,
+      completeOnboarding: () => {
+        setHasSeenOnboarding(true);
+        setShowOnboarding(false);
+        localStorage.setItem('hasSeenOnboarding', 'true');
+      },
+      restartOnboarding: () => {
+        setShowOnboarding(true);
+        setOnboardingStep(0);
+      }
     }}>
       {children}
     </AppContext.Provider>
@@ -991,7 +1286,7 @@ const Navigation = () => {
             <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
             <span className="text-white">Sprint Tracker</span>
           </button>
-          <div className="flex gap-2 items-center flex-wrap text-sm">
+          <div id="xp-level-display" className="flex gap-2 items-center flex-wrap text-sm">
             <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⭐ Lvl {level}</div>
             <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">💫 {xp} XP</div>
             <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">🔥 {streak} day</div>
@@ -1015,7 +1310,8 @@ const Navigation = () => {
             { id: 'settings', label: 'Settings', icon: '⚙️' }
           ].map(item => (
             <button 
-              key={item.id} 
+              key={item.id}
+              id={item.id === 'calendar' ? 'calendar-nav' : item.id === 'achievements' ? 'achievements-nav' : undefined}
               onClick={() => setCurrentScreen(item.id)} 
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 currentScreen === item.id 
@@ -3161,7 +3457,13 @@ const SprintScreen = () => {
     <div className="max-w-6xl mx-auto p-4 md:p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
         <h2 className="text-2xl md:text-3xl font-bold text-white">Sprints</h2>
-        <button onClick={() => setShowForm(true)} className="w-full md:w-auto px-4 md:px-6 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500">+ Create Sprint</button>
+        <button 
+          id="create-sprint-button"
+          onClick={() => setShowForm(true)} 
+          className="w-full md:w-auto px-4 md:px-6 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-500"
+        >
+          + Create Sprint
+        </button>
       </div>
 
       {sprints.length === 0 ? (
@@ -3496,7 +3798,15 @@ function RootContent() {
 
 function RootContentInner() {
   const isMobile = useMobileDetection();
-  const { toastNotifications, setToastNotifications } = useApp();
+  const { 
+    toastNotifications, 
+    setToastNotifications,
+    showOnboarding,
+    onboardingStep,
+    setOnboardingStep,
+    completeOnboarding,
+    restartOnboarding
+  } = useApp();
 
   const removeToast = (id) => {
     setToastNotifications(prev => prev.filter(n => n.id !== id));
@@ -3523,6 +3833,21 @@ function RootContentInner() {
           />
         ))}
       </div>
+
+      {/* Onboarding System */}
+      {showOnboarding && onboardingStep === 0 && (
+        <WelcomeModal
+          onStartTour={() => setOnboardingStep(1)}
+          onSkip={completeOnboarding}
+        />
+      )}
+
+      {showOnboarding && onboardingStep > 0 && (
+        <OnboardingTutorial />
+      )}
+
+      {/* Help Button */}
+      <HelpButton onClick={restartOnboarding} />
     </div>
   );
 }
